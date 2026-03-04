@@ -74,7 +74,7 @@ public sealed class GStreamerManager : IGStreamerManager
         sb.Append("! video/x-raw(memory:D3D11Memory),format=BGRA,width=1920,height=1080,framerate=144/1 ");
         sb.Append("! queue max-size-buffers=2 leaky=downstream ");
         sb.Append("! cudaupload ");
-        sb.Append("! nvh265enc preset=p1 tune=ultra-low-latency zerolatency=true rc-mode=constqp qp-const-i=20 qp-const-p=20 bframes=0 gop-size=30 strict-gop=true repeat-sequence-header=true ");
+        sb.Append("! nvh265enc preset=p1 tune=ultra-low-latency zerolatency=true rc-mode=constqp qp-const-i=20 qp-const-p=20 gop-size=30 strict-gop=true repeat-sequence-header=true ");
         sb.Append("! h265parse ");
         sb.Append("! rtph265pay pt=96 mtu=1400 aggregate-mode=zero-latency config-interval=-1 ");
         sb.Append($"! udpsink host={config.Host} port={config.Port} sync=false async=false buffer-size=4194304");
