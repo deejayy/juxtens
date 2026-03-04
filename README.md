@@ -2,7 +2,9 @@
 
 Virtual display streaming system for Windows. Create virtual monitors, capture their output, and stream over LAN with hardware-accelerated H.265 encoding.
 
-<img src="./Resources/Logo/juxtens-logo.png" width="400">
+<p align="center">
+  <img src="./Resources/Logo/juxtens-logo.png" width="400">
+</p>
 
 ## Main Applications
 
