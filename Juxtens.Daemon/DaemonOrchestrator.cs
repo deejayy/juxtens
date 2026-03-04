@@ -10,14 +10,16 @@ public sealed class StreamInfo
     public ushort Port { get; }
     public uint VdIndex { get; set; }
     public uint MonitorIndex { get; set; }
+    public string ClientHost { get; }
     public StreamHandle Sender { get; set; }
     public StreamState State { get; set; }
 
-    public StreamInfo(ushort port, uint vdIndex, uint monitorIndex, StreamHandle sender)
+    public StreamInfo(ushort port, uint vdIndex, uint monitorIndex, string clientHost, StreamHandle sender)
     {
         Port = port;
         VdIndex = vdIndex;
         MonitorIndex = monitorIndex;
+        ClientHost = clientHost;
         Sender = sender;
         State = StreamState.Running;
     }
@@ -75,7 +77,7 @@ public sealed class DaemonOrchestrator : IDisposable
         _physicalMonitorCount = (uint)Math.Max(1, totalScreens - (int)effectiveVddCount);
     }
 
-    public Task<(bool Success, string? Error, StreamInfo? Stream)> AddStreamAsync()
+    public Task<(bool Success, string? Error, StreamInfo? Stream)> AddStreamAsync(string clientHost)
     {
         return _queue.EnqueueAsync<(bool Success, string? Error, StreamInfo? Stream)>(async () =>
         {
@@ -123,7 +125,7 @@ public sealed class DaemonOrchestrator : IDisposable
             }
 
             UpdateStatus($"[{opId}] Starting sender on monitor {monitorIndex}, port {port.Value}...");
-            var senderConfig = new SenderConfig("127.0.0.1", port.Value, monitorIndex);
+            var senderConfig = new SenderConfig(clientHost, port.Value, monitorIndex);
             var senderResult = _gstManager.StartSender(senderConfig);
             if (!senderResult.IsSuccess)
             {
@@ -137,7 +139,7 @@ public sealed class DaemonOrchestrator : IDisposable
             sender.Exited += OnSenderExited;
             sender.StderrDataReceived += (_, data) => _logger.Info($"[Sender {port}] {data}");
 
-            var stream = new StreamInfo(port.Value, vdIndex, monitorIndex, sender);
+            var stream = new StreamInfo(port.Value, vdIndex, monitorIndex, clientHost, sender);
             lock (_streamLock)
                 _streams.Add(stream);
 
@@ -307,7 +309,7 @@ public sealed class DaemonOrchestrator : IDisposable
             lock (_streamLock)
                 stream.MonitorIndex = monitorIndex;
 
-            var senderConfig = new SenderConfig("127.0.0.1", port, monitorIndex);
+            var senderConfig = new SenderConfig(stream.ClientHost, port, monitorIndex);
             var senderResult = _gstManager.StartSender(senderConfig);
             if (!senderResult.IsSuccess)
             {

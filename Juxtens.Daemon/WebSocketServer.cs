@@ -133,10 +133,22 @@ public sealed class WebSocketServer : IDisposable
         var json = JsonDocument.Parse(message);
         var type = json.RootElement.GetProperty("type").GetString();
 
+        string? clientIp = null;
+        lock (_clientLock)
+        {
+            clientIp = _client?.ConnectionInfo.ClientIpAddress;
+        }
+
+        if (clientIp == null)
+        {
+            _logger.Warning("Received message but no client connected");
+            return;
+        }
+
         switch (type)
         {
             case "AddStream":
-                var addResult = await _orchestrator.AddStreamAsync();
+                var addResult = await _orchestrator.AddStreamAsync(clientIp);
                 if (addResult.Success && addResult.Stream != null)
                 {
                     await SendStreamStartedAsync(addResult.Stream.Port, addResult.Stream.VdIndex, addResult.Stream.MonitorIndex);
