@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Juxtens.DeviceManager\Juxtens.DeviceManager.csproj" />
+    <ProjectReference Include="..\Juxtens.Logger\Juxtens.Logger.csproj" />
+    <ProjectReference Include="..\Juxtens.VDDControl\Juxtens.VDDControl.csproj" />
+    <ProjectReference Include="..\Juxtens.GStreamer\Juxtens.GStreamer.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
+</Project>

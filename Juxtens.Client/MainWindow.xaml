@@ -1,0 +1,84 @@
+<Window x:Class="Juxtens.Client.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Juxtens.Client"
+        mc:Ignorable="d"
+        Title="Juxtens Client"
+        Height="500"
+        Width="700"
+        Icon="/Resources/Icon/juxtens-icon.png"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Connection Controls -->
+        <Grid Grid.Row="0" Margin="15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Label Grid.Column="0"
+                   Content="Daemon Address:"
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,0"/>
+
+            <TextBox Grid.Column="1"
+                     Name="AddressTextBox"
+                     Text="127.0.0.1:5021"
+                     VerticalAlignment="Center"
+                     Padding="5"
+                     Margin="0,0,10,0"/>
+
+            <Button Grid.Column="2"
+                    Name="ConnectButton"
+                    Content="Connect"
+                    Padding="15,5"
+                    Margin="0,0,10,0"
+                    Click="ConnectButton_Click"/>
+
+            <Button Grid.Column="3"
+                    Name="AddStreamButton"
+                    Content="Add Stream"
+                    Padding="15,5"
+                    IsEnabled="False"
+                    Click="AddStreamButton_Click"/>
+        </Grid>
+
+        <!-- Log TextBox -->
+        <Border Grid.Row="1" 
+                Margin="15,0,15,15"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="1"
+                CornerRadius="4">
+            <TextBox Name="LogTextBox"
+                     IsReadOnly="True"
+                     VerticalScrollBarVisibility="Auto"
+                     FontFamily="Consolas"
+                     FontSize="11"
+                     Background="#FF1E1E1E"
+                     Foreground="#FF90EE90"
+                     Padding="10"
+                     BorderThickness="0"
+                     TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Bottom Controls -->
+        <Grid Grid.Row="2" Margin="15">
+            <Button Name="AboutButton"
+                    Content="About"
+                    Padding="15,5"
+                    HorizontalAlignment="Left"
+                    Click="AboutButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>

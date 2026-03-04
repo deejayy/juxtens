@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Product>Juxtens.Daemon</Product>
+    <AssemblyName>Juxtens.Daemon</AssemblyName>
+    <TargetName>Juxtens.Daemon</TargetName>
+    
+    <Description>Juxtens Server Component (Daemon)</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Juxtens.Logger\Juxtens.Logger.csproj" />
+    <ProjectReference Include="..\Juxtens.DeviceManager\Juxtens.DeviceManager.csproj" />
+    <ProjectReference Include="..\Juxtens.VDDControl\Juxtens.VDDControl.csproj" />
+    <ProjectReference Include="..\Juxtens.GStreamer\Juxtens.GStreamer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fleck" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="..\Resources\Logo\juxtens-logo.png">
+      <Link>Resources\Logo\juxtens-logo.png</Link>
+    </Resource>
+    <Resource Include="..\Resources\Icon\juxtens-icon.png">
+      <Link>Resources\Icon\juxtens-icon.png</Link>
+    </Resource>
+  </ItemGroup>
+
+</Project>

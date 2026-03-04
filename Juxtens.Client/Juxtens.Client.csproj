@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Product>Juxtens.Client</Product>
+    <AssemblyName>Juxtens.Client</AssemblyName>
+    <TargetName>Juxtens.Client</TargetName>
+
+    <Description>Juxtens Client Component</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Juxtens.Logger\Juxtens.Logger.csproj" />
+    <ProjectReference Include="..\Juxtens.GStreamer\Juxtens.GStreamer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="..\Resources\Logo\juxtens-logo.png">
+      <Link>Resources\Logo\juxtens-logo.png</Link>
+    </Resource>
+    <Resource Include="..\Resources\Icon\juxtens-icon.png">
+      <Link>Resources\Icon\juxtens-icon.png</Link>
+    </Resource>
+  </ItemGroup>
+
+</Project>
