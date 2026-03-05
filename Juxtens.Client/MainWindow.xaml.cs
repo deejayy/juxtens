@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Media;
 using Juxtens.Logger;
 
 namespace Juxtens.Client;
@@ -8,16 +9,37 @@ public partial class MainWindow : Window
     private readonly WebSocketClient _wsClient;
     private readonly StreamManager _streamManager;
     private readonly ILogger _logger;
+    private readonly TrayIconService? _trayIcon;
+    private readonly ClientConfig _config;
 
-    public MainWindow(WebSocketClient wsClient, StreamManager streamManager, ILogger logger)
+    public MainWindow(WebSocketClient wsClient, StreamManager streamManager, ILogger logger, ClientConfig config, TrayIconService? trayIcon = null)
     {
         _wsClient = wsClient;
         _streamManager = streamManager;
         _logger = logger;
+        _config = config;
+        _trayIcon = trayIcon;
 
         InitializeComponent();
+        LoadConfig();
         AttachEventHandlers();
         UpdateButtonStates();
+    }
+
+    private void LoadConfig()
+    {
+        AddressTextBox.Text = _config.LastConnectionAddress;
+        AutoConnectCheckBox.IsChecked = _config.AutoConnectOnStartup;
+    }
+
+    public async Task TriggerAutoConnectAsync()
+    {
+        if (_config.AutoConnectOnStartup && !string.IsNullOrEmpty(_config.LastConnectionAddress))
+        {
+            _logger.Info("Auto-connect: attempting to connect...");
+            await Task.Delay(500);
+            await ConnectAsync();
+        }
     }
 
     private void AttachEventHandlers()
@@ -28,6 +50,7 @@ public partial class MainWindow : Window
         _wsClient.StreamStopped += OnStreamStopped;
         _wsClient.ErrorReceived += OnErrorReceived;
         _wsClient.MessageLogged += OnWebSocketMessage;
+        _wsClient.HeartbeatStatusChanged += OnHeartbeatStatusChanged;
 
         _streamManager.ReceiverExited += OnReceiverExited;
 
@@ -61,6 +84,9 @@ public partial class MainWindow : Window
         try
         {
             await _wsClient.ConnectAsync(address);
+            
+            _config.LastConnectionAddress = address;
+            _config.Save(_logger);
         }
         catch (Exception ex)
         {
@@ -112,6 +138,13 @@ public partial class MainWindow : Window
         aboutWindow.ShowDialog();
     }
 
+    private void AutoConnectCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        _config.AutoConnectOnStartup = AutoConnectCheckBox.IsChecked == true;
+        _config.Save(_logger);
+        _logger.Info($"Auto-connect set to: {_config.AutoConnectOnStartup}");
+    }
+
     private void OnConnected()
     {
         if (!Dispatcher.CheckAccess())
@@ -123,6 +156,7 @@ public partial class MainWindow : Window
         LogToUI("[CLIENT] Connected to daemon");
         ConnectButton.IsEnabled = true;
         UpdateButtonStates();
+        UpdateHeartbeatIndicator(0);
     }
 
     private void OnDisconnected()
@@ -134,8 +168,10 @@ public partial class MainWindow : Window
         }
 
         LogToUI("[CLIENT] Disconnected from daemon");
+        ConnectButton.IsEnabled = true;
         AddressTextBox.IsEnabled = true;
         UpdateButtonStates();
+        UpdateHeartbeatIndicator(-1);
     }
 
     private void OnStreamStarted(ushort port, uint vdIndex, uint monitorIndex)
@@ -181,7 +217,23 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (message.Contains("Ping") || message.Contains("Pong"))
+        {
+            return;
+        }
+
         LogToUI($"[WS] {message}");
+    }
+
+    private void OnHeartbeatStatusChanged(int missedHeartbeats)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => OnHeartbeatStatusChanged(missedHeartbeats));
+            return;
+        }
+
+        UpdateHeartbeatIndicator(missedHeartbeats);
     }
 
     private async void OnReceiverExited(ushort port)
@@ -207,13 +259,11 @@ public partial class MainWindow : Window
 
     private async void OnWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        _logger.Info("Client window closing");
-
-        if (_wsClient.IsConnected)
+        if (_trayIcon?.IsQuitting == true)
         {
-            e.Cancel = true;
-            
-            await Task.Run(async () =>
+            _logger.Info("Client window closing - application quit");
+
+            if (_wsClient.IsConnected)
             {
                 try
                 {
@@ -224,10 +274,11 @@ public partial class MainWindow : Window
                 {
                     _logger.Error("Error during cleanup on close", ex);
                 }
-            });
-
-            e.Cancel = false;
-            Close();
+            }
+        }
+        else
+        {
+            _logger.Info("Client window closing - app continues running");
         }
     }
 
@@ -235,6 +286,26 @@ public partial class MainWindow : Window
     {
         ConnectButton.Content = _wsClient.IsConnected ? "Disconnect" : "Connect";
         AddStreamButton.IsEnabled = _wsClient.IsConnected;
+    }
+
+    private void UpdateHeartbeatIndicator(int missedHeartbeats)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => UpdateHeartbeatIndicator(missedHeartbeats));
+            return;
+        }
+
+        SolidColorBrush brush = missedHeartbeats switch
+        {
+            -1 => new SolidColorBrush(System.Windows.Media.Color.FromRgb(128, 128, 128)),      // Gray - disconnected
+            0 or 1 => new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 255, 0)),      // Green - healthy
+            2 => new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 0)),         // Yellow - 1 skip
+            3 => new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 165, 0)),         // Orange - 2 skips
+            _ => new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 0, 0))            // Red - 3+ skips
+        };
+
+        HeartbeatIndicator.Fill = brush;
     }
 
     private void LogToUI(string message)

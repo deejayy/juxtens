@@ -13,8 +13,10 @@ public sealed class WebSocketClient : IDisposable
     private readonly TimeSpan _heartbeatTimeout = TimeSpan.FromSeconds(5);
     private System.Threading.Timer? _heartbeatTimer;
     private DateTime _lastPongReceived;
+    private int _missedHeartbeats;
     private CancellationTokenSource? _cts;
     private Task? _receiveTask;
+    private string _remoteAddress = string.Empty;
 
     public event Action? Connected;
     public event Action? Disconnected;
@@ -22,8 +24,10 @@ public sealed class WebSocketClient : IDisposable
     public event Action<ushort>? StreamStopped;
     public event Action<string>? ErrorReceived;
     public event Action<string>? MessageLogged;
+    public event Action<int>? HeartbeatStatusChanged;
 
     public bool IsConnected => _ws?.State == WebSocketState.Open;
+    public string RemoteAddress => _remoteAddress;
 
     public WebSocketClient(ILogger logger)
     {
@@ -40,6 +44,8 @@ public sealed class WebSocketClient : IDisposable
         _ws = new ClientWebSocket();
         _cts = new CancellationTokenSource();
         _lastPongReceived = DateTime.UtcNow;
+        _missedHeartbeats = 0;
+        _remoteAddress = address;
 
         var uri = new Uri($"ws://{address}");
         _logger.Info($"Connecting to {uri}...");
@@ -62,13 +68,15 @@ public sealed class WebSocketClient : IDisposable
             _ws = null;
             _cts.Dispose();
             _cts = null;
+            _remoteAddress = string.Empty;
             throw;
         }
     }
 
     public async Task DisconnectAsync()
     {
-        if (_ws == null) return;
+        var ws = _ws;
+        if (ws == null) return;
 
         _logger.Info("Disconnecting...");
         LogMessage("Disconnecting...");
@@ -78,9 +86,9 @@ public sealed class WebSocketClient : IDisposable
 
         _cts?.Cancel();
 
-        if (_ws.State == WebSocketState.Open)
+        if (ws.State == WebSocketState.Open)
         {
-            await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnect", CancellationToken.None);
+            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnect", CancellationToken.None);
         }
 
         if (_receiveTask != null)
@@ -88,10 +96,11 @@ public sealed class WebSocketClient : IDisposable
             await _receiveTask;
         }
 
-        _ws.Dispose();
+        ws.Dispose();
         _ws = null;
         _cts?.Dispose();
         _cts = null;
+        _remoteAddress = string.Empty;
 
         _logger.Info("Disconnected");
         LogMessage("Disconnected");
@@ -123,8 +132,21 @@ public sealed class WebSocketClient : IDisposable
             return;
         }
 
+        _missedHeartbeats = (int)(elapsed.TotalSeconds / _heartbeatInterval.TotalSeconds);
+        HeartbeatStatusChanged?.Invoke(_missedHeartbeats);
+
         var msg = new { type = "Ping" };
-        Task.Run(async () => await SendAsync(msg));
+        Task.Run(async () => await SendPingMessageAsync(msg));
+    }
+
+    private async Task SendPingMessageAsync(object message)
+    {
+        if (_ws?.State != WebSocketState.Open) return;
+
+        var json = JsonSerializer.Serialize(message);
+        var bytes = Encoding.UTF8.GetBytes(json);
+
+        await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     private async Task SendAsync(object message)
@@ -173,7 +195,7 @@ public sealed class WebSocketClient : IDisposable
         }
         finally
         {
-            if (_ws?.State == WebSocketState.Open)
+            if (_ws != null)
             {
                 _ = Task.Run(async () => await DisconnectAsync());
             }
@@ -208,6 +230,8 @@ public sealed class WebSocketClient : IDisposable
 
             case "Pong":
                 _lastPongReceived = DateTime.UtcNow;
+                _missedHeartbeats = 0;
+                HeartbeatStatusChanged?.Invoke(_missedHeartbeats);
                 break;
 
             case "DaemonExit":

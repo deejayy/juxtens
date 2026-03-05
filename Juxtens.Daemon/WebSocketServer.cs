@@ -13,6 +13,7 @@ public sealed class WebSocketServer : IDisposable
     private readonly object _clientLock = new();
     private System.Threading.Timer? _heartbeatTimer;
     private DateTime _lastPongReceived;
+    private int _missedHeartbeats;
     private readonly TimeSpan _heartbeatInterval = TimeSpan.FromSeconds(2);
     private readonly TimeSpan _heartbeatTimeout = TimeSpan.FromSeconds(5);
     private readonly List<IWebSocketConnection> _allConnections = new();
@@ -21,6 +22,29 @@ public sealed class WebSocketServer : IDisposable
     public event Action<string>? MessageLogged;
     public event Action? ClientConnected;
     public event Action? ClientDisconnected;
+    public event Action<int>? HeartbeatStatusChanged;
+
+    public bool IsClientConnected
+    {
+        get
+        {
+            lock (_clientLock)
+            {
+                return _client != null;
+            }
+        }
+    }
+
+    public string ClientAddress
+    {
+        get
+        {
+            lock (_clientLock)
+            {
+                return _client?.ConnectionInfo.ClientIpAddress ?? string.Empty;
+            }
+        }
+    }
 
     public WebSocketServer(DaemonOrchestrator orchestrator, ILogger logger, string bindAddress = "0.0.0.0:5021")
     {
@@ -66,11 +90,13 @@ public sealed class WebSocketServer : IDisposable
 
             _client = socket;
             _lastPongReceived = DateTime.UtcNow;
+            _missedHeartbeats = 0;
         }
 
         _logger.Info($"Client connected: {socket.ConnectionInfo.ClientIpAddress}");
         LogMessage($"Client connected: {socket.ConnectionInfo.ClientIpAddress}");
         ClientConnected?.Invoke();
+        HeartbeatStatusChanged?.Invoke(0);
 
         _heartbeatTimer = new System.Threading.Timer(CheckHeartbeat, null, _heartbeatInterval, _heartbeatInterval);
     }
@@ -89,6 +115,7 @@ public sealed class WebSocketServer : IDisposable
         _logger.Info($"Client disconnected: {socket.ConnectionInfo.ClientIpAddress}");
         LogMessage($"Client disconnected: {socket.ConnectionInfo.ClientIpAddress}");
         ClientDisconnected?.Invoke();
+        HeartbeatStatusChanged?.Invoke(-1);
 
         Task.Run(async () =>
         {
@@ -111,8 +138,11 @@ public sealed class WebSocketServer : IDisposable
             if (_client != socket) return;
         }
 
-        _logger.Info($"Received: {message}");
-        LogMessage($"RX: {message}");
+        if (!message.Contains("Ping"))
+        {
+            _logger.Info($"Received: {message}");
+            LogMessage($"RX: {message}");
+        }
 
         Task.Run(async () =>
         {
@@ -174,6 +204,8 @@ public sealed class WebSocketServer : IDisposable
 
             case "Ping":
                 _lastPongReceived = DateTime.UtcNow;
+                _missedHeartbeats = 0;
+                HeartbeatStatusChanged?.Invoke(0);
                 await SendPongAsync();
                 break;
 
@@ -186,6 +218,9 @@ public sealed class WebSocketServer : IDisposable
     private void CheckHeartbeat(object? state)
     {
         var elapsed = DateTime.UtcNow - _lastPongReceived;
+        _missedHeartbeats = (int)(elapsed.TotalSeconds / _heartbeatInterval.TotalSeconds);
+        HeartbeatStatusChanged?.Invoke(_missedHeartbeats);
+
         if (elapsed > _heartbeatTimeout)
         {
             _logger.Info($"Heartbeat timeout ({elapsed.TotalSeconds:F1}s), disconnecting client");
@@ -251,8 +286,11 @@ public sealed class WebSocketServer : IDisposable
         if (client?.IsAvailable == true)
         {
             await client.Send(json);
-            _logger.Info($"Sent: {json}");
-            LogMessage($"TX: {json}");
+            if (!json.Contains("Pong"))
+            {
+                _logger.Info($"Sent: {json}");
+                LogMessage($"TX: {json}");
+            }
         }
     }
 

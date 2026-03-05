@@ -37,11 +37,34 @@
 
         <!-- Bottom Controls -->
         <Grid Grid.Row="1" Margin="15">
-            <Button Name="AboutButton"
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0"
+                    Name="AboutButton"
                     Content="About"
                     Padding="15,5"
                     HorizontalAlignment="Left"
                     Click="AboutButton_Click"/>
+
+            <StackPanel Grid.Column="1" 
+                        Orientation="Horizontal" 
+                        VerticalAlignment="Center"
+                        Margin="20,0,0,0">
+                <Ellipse Name="HeartbeatIndicator"
+                         Width="12"
+                         Height="12"
+                         Fill="Gray"
+                         Margin="0,0,8,0"
+                         ToolTip="Connection status"/>
+                <TextBlock Name="ConnectionStatusText"
+                           Text="No client connected"
+                           VerticalAlignment="Center"
+                           Foreground="Gray"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

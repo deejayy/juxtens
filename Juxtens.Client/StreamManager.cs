@@ -11,6 +11,18 @@ public sealed class StreamManager : IDisposable
     private readonly object _lock = new();
 
     public event Action<ushort>? ReceiverExited;
+    public event Action? ReceiversChanged;
+
+    public int ActiveScreenCount
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _receivers.Count;
+            }
+        }
+    }
 
     public StreamManager(IGStreamerManager gstManager, ILogger logger)
     {
@@ -44,6 +56,8 @@ public sealed class StreamManager : IDisposable
 
             handle.Exited += (sender, args) => OnReceiverExited(port);
         }
+
+        ReceiversChanged?.Invoke();
     }
 
     public void StopReceiver(ushort port)
@@ -62,6 +76,8 @@ public sealed class StreamManager : IDisposable
 
         _logger.Info($"Stopping receiver on port {port}");
         handle.Stop();
+
+        ReceiversChanged?.Invoke();
     }
 
     public void StopAllReceivers()
@@ -79,6 +95,11 @@ public sealed class StreamManager : IDisposable
         {
             handle.Stop();
         }
+
+        if (handles.Length > 0)
+        {
+            ReceiversChanged?.Invoke();
+        }
     }
 
     private void OnReceiverExited(ushort port)
@@ -90,6 +111,7 @@ public sealed class StreamManager : IDisposable
 
         _logger.Info($"Receiver on port {port} exited");
         ReceiverExited?.Invoke(port);
+        ReceiversChanged?.Invoke();
     }
 
     public void Dispose()

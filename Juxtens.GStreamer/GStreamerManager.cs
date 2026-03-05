@@ -1,16 +1,19 @@
 using System.Diagnostics;
 using System.Text;
 using Juxtens.DeviceManager;
+using Juxtens.Logger;
 
 namespace Juxtens.GStreamer;
 
 public sealed class GStreamerManager : IGStreamerManager
 {
     private readonly GstConfig _config;
+    private readonly ILogger? _logger;
 
-    public GStreamerManager(GstConfig? config = null)
+    public GStreamerManager(GstConfig? config = null, ILogger? logger = null)
     {
         _config = config ?? GstConfig.Default;
+        _logger = logger;
     }
 
     public Result<StreamHandle, GstError> StartSender(SenderConfig config)
@@ -35,6 +38,9 @@ public sealed class GStreamerManager : IGStreamerManager
 
     private Result<StreamHandle, GstError> SpawnProcess(string binaryPath, string args)
     {
+        var fullCommand = $"\"{binaryPath}\" {args}";
+        _logger?.Info($"[GStreamer] Executing: {fullCommand}");
+        
         var redirectOutput = _config.StderrMode == StderrMode.Pipe;
         var psi = new ProcessStartInfo
         {
