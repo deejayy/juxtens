@@ -6,6 +6,32 @@ Virtual display streaming system for Windows. Create virtual monitors, capture t
   <img src="./Resources/Logo/juxtens-logo.png" width="400">
 </p>
 
+## One-Time Installation Requirements
+
+Before running Juxtens, you need to install the following dependencies:
+
+### 1. Runtime Prerequisites
+- **Microsoft Visual C++ Redistributable (latest)** - [vc_redist.x64.exe](https://aka.ms/vc14/vc_redist.x64.exe)
+- **.NET 9 Windows Desktop Runtime** - [windowsdesktop-runtime-9.0.13-win-x64.exe](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.13-windows-x64-installer)
+
+### 2. Required Components
+Download the following ZIP files from the [Releases](https://github.com/deejayy/juxtens/releases) page:
+
+- **virtual-display-driver.zip** - VDD driver files
+- **gstreamer-hevc-265.zip** - GStreamer runtime with H.265 support
+
+**Extract both ZIP files into the same folder where you'll place the application executables.**
+
+After extraction, your application directory should contain:
+```
+Juxtens.Daemon.exe
+Juxtens.Client.exe
+vdd/                    (from virtual-display-driver.zip)
+gstreamer/              (from gstreamer-hevc-265.zip)
+```
+
+The VDD driver will be installed when you first run the Daemon and click "Install VDD Driver".
+
 ## Main Applications
 
 ### Juxtens.Daemon

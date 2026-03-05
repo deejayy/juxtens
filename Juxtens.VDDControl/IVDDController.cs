@@ -5,6 +5,12 @@ namespace Juxtens.VDDControl;
 public interface IVDDController : IDisposable
 {
     /// <summary>
+    /// Checks if the VDD driver is installed on the system.
+    /// Returns true if at least one VDD device is found.
+    /// </summary>
+    bool IsDriverInstalled();
+
+    /// <summary>
     /// Gets the current virtual display count from VDD configuration.
     /// This is the persisted count in the XML file, regardless of device state.
     /// Note: Config may contain 0 due to 3rd-party modification, which is invalid.

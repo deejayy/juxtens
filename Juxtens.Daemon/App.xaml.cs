@@ -13,6 +13,7 @@ public partial class App : System.Windows.Application
     private DaemonOrchestrator? _orchestrator;
     private WebSocketServer? _wsServer;
     private TrayIconService? _trayIcon;
+    private VDDController? _vddController;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -31,10 +32,10 @@ public partial class App : System.Windows.Application
         try
         {
             var deviceManager = new WindowsDeviceManager(new DeviceManagerConfig(), _logger);
-            var vddController = new VDDController(deviceManager, _logger);
+            _vddController = new VDDController(deviceManager, _logger);
             var gstreamerManager = new GStreamerManager(null, _logger);
 
-            _orchestrator = new DaemonOrchestrator(vddController, gstreamerManager, _logger);
+            _orchestrator = new DaemonOrchestrator(_vddController, gstreamerManager, _logger);
             _wsServer = new WebSocketServer(_orchestrator, _logger);
             _wsServer.Start();
 
@@ -52,7 +53,7 @@ public partial class App : System.Windows.Application
     
     private MainWindow CreateMainWindow()
     {
-        var window = new MainWindow(_wsServer!, _logger!, _trayIcon);
+        var window = new MainWindow(_wsServer!, _vddController!, _logger!, _trayIcon);
         _trayIcon!.SetMainWindow(window);
         return window;
     }

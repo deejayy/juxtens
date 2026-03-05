@@ -41,6 +41,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <Button Grid.Column="0"
@@ -50,10 +51,19 @@
                     HorizontalAlignment="Left"
                     Click="AboutButton_Click"/>
 
-            <StackPanel Grid.Column="1" 
+            <Button Grid.Column="1"
+                    Name="InstallVDDButton"
+                    Content="Install VDD Driver"
+                    Padding="15,5"
+                    Margin="10,0,0,0"
+                    HorizontalAlignment="Left"
+                    Click="InstallVDDButton_Click"/>
+
+            <StackPanel Grid.Column="2" 
                         Orientation="Horizontal" 
                         VerticalAlignment="Center"
-                        Margin="20,0,0,0">
+                        HorizontalAlignment="Right"
+                        Margin="0,0,0,0">
                 <Ellipse Name="HeartbeatIndicator"
                          Width="12"
                          Height="12"

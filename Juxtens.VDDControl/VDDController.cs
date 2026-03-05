@@ -28,6 +28,25 @@ public sealed class VDDController : IVDDController
         _config.Dispose();
     }
 
+    public bool IsDriverInstalled()
+    {
+        _logger.Info("Checking if VDD driver is installed");
+        var findResult = _deviceManager.FindDevices(DevicePredicates.VirtualDisplay());
+        
+        return findResult.Match(
+            devices =>
+            {
+                var installed = devices.Count > 0;
+                _logger.Info($"VDD driver installed: {installed}");
+                return installed;
+            },
+            error =>
+            {
+                _logger.Warning($"Failed to check VDD installation: {error.Message}");
+                return false;
+            });
+    }
+
     public Result<uint, VDDError> GetCurrentCount()
     {
         return _config.GetMonitorCount();
